@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="/vue.js"></script>
+    <script src="/axios.min.js"></script>
+</head>
+<style>
+    #app{
+        width: 600px;
+        margin: 200px auto;
+        border: 1px solid green;
+    }
+</style>
+<body>
+
+
+
+    <div id="app">
+        <form id="formInfo">
+            <table>
+                <tr>
+                    <p>server</p>
+                </tr>
+                <tr>
+                    <td>name</td>
+                    <td>
+                        <input type="text" name="name" value="OPC-UA Default Server">
+                    </td>
+                </tr>
+                <tr>
+                    <td>url</td>
+                    <td><input type="text" name="url" value="localhost:4840/freeopcua/server/"></td>
+                </tr>
+                <tr>
+                    <td>timeoutInMillis</td>
+                    <td>
+                        <input type="number" name="timeoutInMillis" value="5000">
+                    </td>
+                </tr>
+                <tr>
+                    <td>scanPeriodInMillis</td>
+                    <td>
+                        <input type="number" name="scanPeriodInMillis" value="5000">
+                    </td>
+                </tr>
+                <tr>
+                    <td>disableSubscriptions</td>
+                    <td>
+                        <select onselect="false" name="disableSubscriptions">
+                            <option value="true">true</option>
+                            <option value="false">false</option>
+                        </select>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td>subCheckPeriodInMillis</td>
+                    <td>
+                        <input type="number" name="subCheckPeriodInMillis" value="100">
+                    </td>
+                </tr>
+                <tr>
+                    <td>showMap</td>
+                    <td>
+                        <select onselect="false" name="showMap">
+                            <option value="true">true</option>
+                            <option value="false">false</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>security</td>
+                    <td>
+                        <select value="Basic128Rsa15" name="security">
+                            <option value="Basic128Rsa15">Basic128Rsa15</option>
+                            <option value="Basic256">Basic256</option>
+                            <option value="Basic256Sha256">Basic256Sha256</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>identity-type</td>
+                    <td>
+                        <input type="text" value="anonymous" name="type" readonly="readonly">
+                    </td>
+                </tr>
+
+            </table>
+            <table id="optionTable">
+                <tr><p>mapping</p></tr>
+                <tr>
+                    <td>browserName</td>
+                    <td>NodeId</td>
+                    <td>类型</td>
+                    <td>是否添加</td>
+                </tr>
+                <tr v-for="item in items" :key="item.nodeId" :name="item.browserName" :nodeId="item.nodeId">
+                    <td>{{item.browserName}}</td>
+                    <td>{{item.nodeId}}</td>
+                    <td>
+                        <select name="nodeType">
+                            <option value="deviceNodePattern">deviceNodePattern</option>
+                            <option value="deviceNamePattern">deviceNamePattern</option>
+                            <option value="attributes">attributes</option>
+                            <option value="timeseries">timeseries</option>
+                            <option value="rpc_methods">rpc_methods</option>
+                            <option value="attributes_updates">attributes_updates</option>
+                        </select>
+                    </td>
+                    <td>
+                        <form>
+                            <input type="radio" :name="item.browserName" value="y" @click="addMapping($event)">y
+                            <input type="radio" :name="item.browserName" value="n" @click="delMapping($event)">n
+                        </form>
+
+                    </td>
+                </tr>
+
+
+
+            </table>
+
+        </form>
+        <a @click="toJsonTxt()" >生成Json</a>
+    </div>
+
+
+</body>
+<script>
+   new Vue({
+        el:'#app',
+        data:{
+            items:null,
+            retJson : {},
+            identityJson : {},
+            serverJson:{},
+            mappingJson :{},
+            timeseries : [],
+            attributes : []
+
+        },
+        mounted(){
+            axios
+                .get("/getNodes")
+                .then(response =>{
+                    this.items = response.data;
+                })
+                .catch(error =>{
+
+                });
+        },
+        methods:{
+            toJsonTxt(){
+                this.identityJson.type = "anonymous"
+
+                this.serverJson.name = document.getElementsByName("name")[0].value
+                this.serverJson.url = document.getElementsByName("url")[0].value
+
+                this.serverJson.timeoutInMillis = parseInt(document.getElementsByName("timeoutInMillis")[0].value,10)
+
+                this.serverJson.scanPeriodInMillis = parseInt(document.getElementsByName("scanPeriodInMillis")[0].value,10)
+
+                this.serverJson.disableSubscriptions = document.getElementsByName("disableSubscriptions")[0].value=="true"?true:false
+
+                this.serverJson.subCheckPeriodInMillis	 = parseInt(document.getElementsByName("subCheckPeriodInMillis")[0].value,10)
+
+                this.serverJson.security= document.getElementsByName("security")[0].value
+
+                this.serverJson.showMap = document.getElementsByName("showMap")[0].value=="true"?true:false
+
+                this.serverJson.identity = this.identityJson
+
+                this.mappingJson.timeseries = this.timeseries
+                this.mappingJson.attributes = this.attributes
+                this.serverJson.mapping = []
+                this.serverJson.mapping.push(this.mappingJson)
+                this.retJson.server = this.serverJson
+
+                var eleLink = document.createElement("a");
+                eleLink.download = 'opcua.json';
+                eleLink.style.display = "none";
+// 字符内容转变成blob地址
+                var data = JSON.stringify(this.retJson, undefined, 4);
+                var blob = new Blob([data], { type: "text/json" });
+                eleLink.href = URL.createObjectURL(blob);
+// 触发点击
+                document.body.appendChild(eleLink);
+                eleLink.click();
+                document.body.removeChild(eleLink);
+            },
+            addMapping(event){
+                bname = event.target.getAttribute('name')
+                trEle = document.getElementsByName(bname)[0];
+                pathValue = document.getElementsByName(bname)[0].getAttribute("nodeId")
+                pathValue = "${"+pathValue+"}"
+                typeName = trEle.children[2].firstChild.value
+
+                if (typeName == "attributes"){
+                    nodeEle = {}
+                    nodeEle.key = bname
+                    nodeEle.path = pathValue
+                    this.attributes.push(nodeEle)
+
+                }else if(typeName == "timeseries"){
+                    nodeEle = {}
+                    nodeEle.key = bname
+                    nodeEle.path = pathValue
+                    this.timeseries.push(nodeEle)
+                }else if (typeName == "deviceNodePattern"){
+                    this.mappingJson.deviceNodePattern = pathValue
+                }else if (typeName == "deviceNamePattern"){
+                    this.mappingJson.deviceNamePattern = pathValue
+                }
+            },
+            delMapping(event){
+
+            }
+        }
+    })
+</script>
+</html>

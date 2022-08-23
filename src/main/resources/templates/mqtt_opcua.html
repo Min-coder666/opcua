@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="/vue.js"></script>
+    <script src="/axios.min.js"></script>
+</head>
+<style>
+    #app{
+        width: 600px;
+        margin: 200px auto;
+        border: 1px solid green;
+    }
+</style>
+<body>
+
+
+
+<div id="app">
+    <form id="formInfo">
+
+        <table id="optionTable">
+            <tr><p>opcua设备</p></tr>
+            <tr>
+                <td>browserName</td>
+                <td>NodeId</td>
+                <td>btn</td>
+                <td>btn</td>
+            </tr>
+            <tr v-for="item in items" :key="item.nodeId" :name="item.browserName" :nodeId="item.nodeId">
+                <td>{{item.browserName}}</td>
+                <td>{{item.nodeId}}</td>
+                <td> <a style="border: 1px solid red" :name="item.browserName" @click="setName($event)">设置为Name</a></td>
+                <td> <a  style="border: 1px solid red" :name="item.browserName" @click="setTimeseries($event)">设置为timeseries</a></td>
+<!--                <td>-->
+<!--                    <select name="nodeType">-->
+<!--                        <option value="deviceNodePattern">deviceNodePattern</option>-->
+<!--                        <option value="deviceNamePattern">deviceNamePattern</option>-->
+<!--                        <option value="attributes">attributes</option>-->
+<!--                        <option value="timeseries">timeseries</option>-->
+<!--                        <option value="rpc_methods">rpc_methods</option>-->
+<!--                        <option value="attributes_updates">attributes_updates</option>-->
+<!--                    </select>-->
+<!--                </td>-->
+<!--                <td>-->
+<!--                    <form>-->
+<!--                        <input type="radio" :name="item.browserName" value="y" @click="addMapping($event)">y-->
+<!--                        <input type="radio" :name="item.browserName" value="n" @click="delMapping($event)">n-->
+<!--                    </form>-->
+
+<!--                </td>-->
+            </tr>
+            <tr>
+                <h6  style="border: 1px solid red" @click="connectGateway()">连接Thingsboard</h6>
+            </tr>
+
+        </table>
+
+    </form>
+
+</div>
+
+
+</body>
+<script>
+    new Vue({
+        el:'#app',
+        data:{
+            items:null,
+            retJson : {},
+            identityJson : {},
+            serverJson:{},
+            mappingJson :{},
+            timeseries : [],
+            attributes : [],
+            deviceName :""
+
+        },
+        mounted(){
+            axios
+                .get("/getNodes")
+                .then(response =>{
+                    this.items = response.data;
+                })
+                .catch(error =>{
+
+                });
+        },
+        methods:{
+            setName(event){
+                bname = event.target.getAttribute('name')
+                this.deviceName = bname
+                alert(this.deviceName)
+            },
+            setTimeseries(event){
+                bname = event.target.getAttribute('name')
+                this.timeseries.push(bname)
+                alert(this.timeseries)
+            },
+            connectGateway(){
+                ret = {}
+                console.log(this.deviceName)
+                console.log(this.timeseries)
+
+                ret.deviceName = this.deviceName
+                ret.timeseries = this.timeseries
+                console.log(ret)
+                axios
+                    .post("/connectFirst",ret)
+            }
+
+        }
+    })
+</script>
+</html>

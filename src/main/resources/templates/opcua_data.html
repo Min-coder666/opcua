@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="vue.js"></script>
+    <link rel="stylesheet" type="text/css" href="elementui.css">
+    <script src="elementui.js"></script>
+    <script src="axios.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <el-container style="width: 900px; margin: auto">
+            <el-header style="height: 100px">
+                <el-button type="primary" @click="getData">获取数据</el-button>
+                <el-button type="primary" @click="connector">连接</el-button>
+                <div >
+                    {{ws_status}}
+                </div>
+            </el-header>
+            <el-main>
+                <el-table
+                        :data="tableData"
+                        stripe
+                        style="width: 100%">
+                    <el-table-column
+                            prop="name"
+                            label="设备名称"
+                            width="140">
+                    </el-table-column>
+                    <el-table-column
+                            prop="time"
+                            label="扫描时间"
+                            width="260">
+                    </el-table-column>
+                    <el-table-column
+                            prop="timeseries.Humidity"
+                            label="Humidity"
+                            width="120"
+                    >
+                    </el-table-column>
+                    <el-table-column
+                            prop="timeseries.Temperature"
+                            label="Temperature"
+                            width="120"
+                    >
+                    </el-table-column>
+                    <el-table-column
+                            prop="timeseries.BatteryLevel"
+                            label="BatteryLevel"
+                            width="120"
+                    >
+                    </el-table-column>
+                </el-table>
+            </el-main>
+        </el-container>
+
+    </div>
+
+
+
+    <script>
+        new Vue({
+            el: '#app',
+            data:{
+                socket:"",
+                ws_status:"当前未连接",
+                    tableData: [{
+                        name: '未连接',
+                        time: '未连接',
+                        timeseries: {
+                            Humidity: "未连接",
+                            Temperature: "未连接",
+                            BatteryLevel:"未连接"
+                        }
+                    }]
+                }
+            ,
+            methods:{
+                getData(){
+                    if (!window.WebSocket){
+                        alert("当前浏览器不支持websocket");
+                    }else {
+                        socket = new WebSocket("ws://127.0.0.1:9998/pushData");
+                        socket.onopen = this.onopen
+                        // 设置关闭连接的方法
+                        socket.onclose = this.onclose
+                        // 设置接收数据的方法
+                        socket.onmessage = this.onmessage
+                    }
+                },
+                onopen(ev){
+                    this.ws_status = "已经连接到ws服务器";
+                },
+                onclose(){
+                    this.ws_status = "ws服务器连接已断开";
+                },
+                onmessage(ev){
+                    this.tableData = JSON.parse(ev.data)
+                },
+                connector(){
+                    axios
+                        .get("/connector")
+                }
+            }
+        }
+    )
+    </script>
+</body>
+</html>
